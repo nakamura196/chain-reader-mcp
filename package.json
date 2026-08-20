@@ -1,0 +1,23 @@
+{
+  "name": "chain-reader-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Read-only Ethereum MCP server: lets an LLM inspect a chain in natural language, and records where every answer came from.",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "chain-reader-mcp": "src/server.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test test/*.test.js",
+    "smoke": "node test/smoke.mjs",
+    "handshake": "node test/mcp-handshake.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.4.3"
+  }
+}

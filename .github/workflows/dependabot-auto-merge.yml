@@ -1,0 +1,26 @@
+# security advisory が紐づいた Dependabot PR だけを自動マージする。
+# minor/patch を全部自動マージすると、cooldown をすり抜けた攻撃版を取り込む恐れがあるため。
+name: Dependabot auto-merge
+
+on: pull_request
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: dependabot/fetch-metadata@21025c705c08248db411dc16f3619e6b5f9ea21a # v2
+        id: meta
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - if: steps.meta.outputs.ghsa-id != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh pr review --approve "$PR_URL" -b "Auto-approving security update."
+          gh pr merge --auto --squash "$PR_URL"

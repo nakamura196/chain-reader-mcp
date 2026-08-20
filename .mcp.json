@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "chain-reader": {
+      "command": "node",
+      "args": ["src/server.js"],
+      "env": {
+        "ETH_NETWORK": "mainnet"
+      }
+    }
+  }
+}
