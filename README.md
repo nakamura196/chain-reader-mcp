@@ -37,7 +37,11 @@ claude mcp add chain-reader -- node "$PWD/src/server.js"
 ```
 
 このディレクトリで `claude` を起動するなら `.mcp.json` があるので登録は不要。
+ただし**初回だけ承認を求められる**（`claude mcp list` に `⏸ Pending approval` と出る）。
+講義当日に慌てないよう、事前に一度起動して承認しておくこと。
+
 Claude Desktop なら `claude_desktop_config.json` の `mcpServers` に同じ内容を書く。
+その場合 `args` は絶対パスにする。
 
 環境変数で対象ネットワークを切り替えられる。既定は mainnet。
 
