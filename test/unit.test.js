@@ -94,6 +94,18 @@ test('イベント署名の indexed を拾い分ける', () => {
   assert.equal(parsed.topic0, '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef');
 });
 
+test('動的型を indexed にしたイベントは、値ではなくハッシュとして扱う', () => {
+  // ABI 仕様: indexed の string / bytes / 配列 / 構造体は、topic に値ではなく
+  // keccak ハッシュが載る。値として復号しようとすると壊れる（回帰防止）。
+  const parsed = parseEventSignature('Named(string indexed label, uint256 value)');
+  assert.deepEqual(parsed.params.map((p) => p.indexed), [true, false]);
+  assert.equal(parsed.canonical, 'Named(string,uint256)');
+
+  // 値として読もうとすると例外になることを固定しておく。
+  // readEvents はこの型を検出してハッシュのまま返す（下の readEvents 側の分岐）。
+  assert.throws(() => decodeReturn(['string'], '0x' + 'ab'.repeat(32)));
+});
+
 test('explain_selector は関数とイベントを区別する', () => {
   const fn = explainSelector({ signature: 'transfer(address,uint256)' });
   assert.equal(fn.function_selector, '0xa9059cbb');

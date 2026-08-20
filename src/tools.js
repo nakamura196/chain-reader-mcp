@@ -384,8 +384,22 @@ export async function readEvents(client, { address, event_signature, from_block,
   const indexedTypes = event.params.filter((p) => p.indexed).map((p) => p.type);
   const dataTypes = event.params.filter((p) => !p.indexed).map((p) => p.type);
 
+  // ABI 仕様では、indexed の引数が動的型（string / bytes / 配列 / 構造体）のとき、
+  // topic に載るのは値ではなく「値の keccak ハッシュ」。復元はできない。
+  // 値として読もうとすると壊れるので、ハッシュであることを明示して返す。
+  const isDynamicType = (t) => t === 'string' || t === 'bytes' || t.endsWith('[]') || t.startsWith('(');
+
   const decoded = logs.slice(0, limit).map((log) => {
-    const topicValues = log.topics.slice(1).map((topic, i) => decodeReturn([indexedTypes[i]], topic)[0]);
+    const topicValues = log.topics.slice(1).map((topic, i) => {
+      const type = indexedTypes[i];
+      if (type === undefined) return topic;
+      if (isDynamicType(type)) return `${topic}（${type} の値そのものではなく keccak ハッシュ。元の値は復元できない）`;
+      try {
+        return decodeReturn([type], topic)[0];
+      } catch {
+        return topic;
+      }
+    });
     let dataValues = [];
     try {
       dataValues = decodeReturn(dataTypes, log.data);
@@ -404,7 +418,10 @@ export async function readEvents(client, { address, event_signature, from_block,
   return {
     event: event.canonical,
     topic0: event.topic0,
-    topic0_note: `topic0 = keccak256("${event.canonical}")。ノードはこの 32 バイトで絞り込む。indexed の引数だけが topic に載り、残りは data に詰められる。`,
+    topic0_note:
+      `topic0 = keccak256("${event.canonical}")。ノードはこの 32 バイトで絞り込む。indexed の引数だけが topic に載り、残りは data に詰められる。` +
+      'indexed にできるのは最大 3 個（anonymous イベントは 4 個）。anonymous イベントには topic0 が無いので、この絞り込みでは拾えない。' +
+      '動的型（string / bytes / 配列 / 構造体）を indexed にした場合、topic に載るのは値ではなくその keccak ハッシュで、元の値は復元できない。',
     scanned_blocks: `${from} 〜 ${to}`,
     total_matches: logs.length,
     shown: decoded.length,
